@@ -1,0 +1,407 @@
+C51 COMPILER V9.60.0.0   MAIN                                                              04/10/2021 16:18:36 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN C:\111\evm\main.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND TABS(2) OBJECT(C:\111
+                    -\evm\main.obj)
+
+line level    source
+
+   1          #include<reg51.h>
+   2          #include<string.h>
+   3          #include<stdlib.h>
+   4          
+   5          
+   6          /*** USER DEFIND HEADER FILE ***/ 
+   7            #include"lcd.h"
+   8            #include"delay.h"
+   9            #include"keypad.h"
+  10            #include"uart.h"
+  11            #include"type.h"
+  12            #include"i2c.h"
+  13            #include"otp.h"
+  14          
+  15          sbit led=P2^7;
+  16          code u8 voter[][10]={"12563773","12621259","12332145","12555657"};
+  17          extern u8 rec_buff[25],k,otp[5];
+  18          extern bit r_flag;
+  19          unsigned char scan_otp[5]; 
+  20          
+  21          int main()
+  22          {
+  23   1       
+  24   1       u8 buffaddr=0;
+  25   1        u8 party,party_1set=0,party_2set=0,party_3set=0,ch2;
+  26   1        u8 party1_total=0,party2_total=0,party3_total=0,reset;
+  27   1       int i,j,cnt_1=0,cnt_2=0, cnt_3=0,temp1=0,temp2=0, temp3=0;
+  28   1       led=0;
+  29   1       uart_inti();
+  30   1       lcd_init();
+  31   1       lcd_str("wait..");
+  32   1       
+  33   1       while(1)
+  34   1        {
+  35   2      
+  36   2          uart_str("Waiting data...");
+  37   2          lcd_cmd(0x01);
+  38   2          lcd_cmd(0x80);
+  39   2        lcd_str("{Ele. Voting System}");
+  40   2        delay_ms(2000);
+  41   2          lcd_cmd(0x01);
+  42   2          
+  43   2          
+  44   2         memset(rec_buff,'\0',25);
+  45   2      lcd_cmd(0xc0);
+  46   2      
+  47   2       lcd_str("Waiting for data!!");
+  48   2          while(r_flag==0);
+  49   2        r_flag=0;k=0;
+  50   2          lcd_cmd(0x01);
+  51   2        lcd_cmd(0x94);
+  52   2        lcd_str("Data Received..");
+  53   2        delay_ms(1000);
+  54   2        lcd_cmd(0x01);
+C51 COMPILER V9.60.0.0   MAIN                                                              04/10/2021 16:18:36 PAGE 2   
+
+  55   2        lcd_cmd(0x80);
+  56   2        lcd_str("Data is:\n");
+  57   2        lcd_cmd(0xc0);
+  58   2          lcd_str(rec_buff);  
+  59   2        delay_ms(500);
+  60   2         
+  61   2         for(i=0;i<4;i++)
+  62   2            {
+  63   3            
+  64   3            if((strcmp(rec_buff,voter[i])==0))
+  65   3            break ;
+  66   3             }
+  67   2             
+  68   2            if(i==4)
+  69   2             {
+  70   3              lcd_cmd(0x80);
+  71   3              lcd_str("invalid");
+  72   3              led=0;
+  73   3              delay_ms(2000);
+  74   3              led=1;
+  75   3              delay_ms(1000);
+  76   3                }
+  77   2      
+  78   2            else if(i==3)
+  79   2              {
+  80   3              lcd_str(0x01);    
+  81   3              lcd_cmd(0x80);
+  82   3              lcd_str("OFFICER>>>");
+  83   3              delay_ms(1000);
+  84   3              otp_gen();
+  85   3                  lcd_cmd(0x01);
+  86   3                  lcd_cmd(0x94);
+  87   3              lcd_str("OTP..: ");
+  88   3                    lcd_cmd(0xd4);
+  89   3              lcd_str(otp);
+  90   3              delay_ms(1500);
+  91   3                    lcd_cmd(0xc0);
+  92   3            
+  93   3            /*  for(i=0;i<5;i++)
+  94   3                { 
+  95   3                    if(i==4)
+  96   3                      {  scan_otp[4]='\0';
+  97   3                        break;
+  98   3                      }
+  99   3                  scan_otp[i]=key_scan();
+ 100   3                  if(scan_otp[i]=='D')
+ 101   3                  {
+ 102   3                    i=i-2;
+ 103   3                    lcd_cmd(0x10);
+ 104   3                    lcd_char(' ');
+ 105   3                    lcd_cmd(0x10);
+ 106   3                  }
+ 107   3                  else
+ 108   3                    lcd_char('*');
+ 109   3              } */j=0;
+ 110   3                  while(1)
+ 111   3                  {
+ 112   4                  here:
+ 113   4                  scan_otp[j]=key_scan();
+ 114   4                      if(scan_otp[j]=='#' && j==0)
+ 115   4                      {
+ 116   5                      lcd_cmd(0x80);
+C51 COMPILER V9.60.0.0   MAIN                                                              04/10/2021 16:18:36 PAGE 3   
+
+ 117   5                      lcd_str("not entered");
+ 118   5                      delay_ms(1000);
+ 119   5                      lcd_cmd(0x01);
+ 120   5                      j++;
+ 121   5                      goto here;
+ 122   5                      }
+ 123   4                      else if(scan_otp[j]=='D' && j!=0)
+ 124   4                      {
+ 125   5                      lcd_cmd(0x10);
+ 126   5                      lcd_char(' ');
+ 127   5                      lcd_cmd(0x10);
+ 128   5                      j--;
+ 129   5                      continue;
+ 130   5                      }
+ 131   4                      else if(scan_otp[j]=='#')
+ 132   4                      {
+ 133   5                      scan_otp[j]='\0';
+ 134   5                      break;
+ 135   5                      }
+ 136   4                      else
+ 137   4                      {
+ 138   5                      lcd_char(scan_otp[j]);
+ 139   5                      delay_ms(1000);
+ 140   5                      lcd_cmd(0x10);
+ 141   5                      lcd_char('*');
+ 142   5                      j++;
+ 143   5                      }
+ 144   4                  }
+ 145   3                  
+ 146   3                lcd_cmd(0x94);
+ 147   3                lcd_str("press #");
+ 148   3                while(!(key_scan()=='#'));
+ 149   3                  delay_ms(200);
+ 150   3         
+ 151   3            if(strcmp(otp,scan_otp)==0)
+ 152   3              { 
+ 153   4                lcd_cmd(0xd4);
+ 154   4                  lcd_str("OTP matched");
+ 155   4                delay_ms(500);
+ 156   4                lcd_cmd(0x01);
+ 157   4                lcd_cmd(0xd4);
+ 158   4                party1_total=i2c_dev_read(0xa0,4);
+ 159   4                party2_total=i2c_dev_read(0xa0,5);
+ 160   4                party3_total=i2c_dev_read(0xa0,6);
+ 161   4      
+ 162   4                
+ 163   4                lcd_cmd(0x01);
+ 164   4                lcd_cmd(0x80);
+ 165   4                lcd_str("party1=>[A]=");
+ 166   4                    lcd_char(party1_total);
+ 167   4                delay_ms(300);
+ 168   4          
+ 169   4                lcd_cmd(0xc0);
+ 170   4                lcd_str("party2=>[B]=");
+ 171   4                    lcd_char(party2_total);
+ 172   4                delay_ms(300);
+ 173   4                    
+ 174   4                lcd_cmd(0x94);
+ 175   4                lcd_str("party3=>[C]=");
+ 176   4                    lcd_char(party3_total);
+ 177   4                delay_ms(5000);
+ 178   4                         temp1=party1_total+48;
+C51 COMPILER V9.60.0.0   MAIN                                                              04/10/2021 16:18:36 PAGE 4   
+
+ 179   4                temp2=party2_total+48;
+ 180   4                  temp3=party3_total+48;
+ 181   4                            if(temp1>temp2 && temp1>temp3)
+ 182   4                  {
+ 183   5                    lcd_cmd(0xd4);
+ 184   5                    lcd_str("A has won!");
+ 185   5                    delay_ms(1000);
+ 186   5                  }
+ 187   4                 else if(temp2>temp1 && temp2>temp3)
+ 188   4                  {
+ 189   5                    lcd_cmd(0xd4);
+ 190   5                    lcd_str("B has won!");
+ 191   5                    delay_ms(1000);
+ 192   5                  }
+ 193   4                    else if(temp3>temp2 && temp3>temp1)
+ 194   4                  {
+ 195   5                    lcd_cmd(0xd4);
+ 196   5                    lcd_str("C has won!");
+ 197   5                    delay_ms(1000);
+ 198   5                  }
+ 199   4                  else
+ 200   4                  {lcd_cmd(0xd4);
+ 201   5                    lcd_str("no winner");
+ 202   5                    delay_ms(1000);
+ 203   5                  }
+ 204   4                          
+ 205   4      
+ 206   4              }
+ 207   3              else
+ 208   3              {
+ 209   4                  lcd_str("wrong *otp*");
+ 210   4                    led=1;
+ 211   4                    delay_ms(5000);
+ 212   4                    led=0;
+ 213   4                    
+ 214   4              }
+ 215   3             
+ 216   3              lcd_cmd(0x01);
+ 217   3              lcd_cmd(0x80);
+ 218   3              lcd_str("[4]Reset ");
+ 219   3                       reset=key_scan();
+ 220   3                if(reset=='4')
+ 221   3               { for(i=0;i<=6;i++)
+ 222   4                 { i2c_dev_write(0xa0,i,'0'); }lcd_str("reset comp...");delay_ms(500); }
+ 223   3                else 
+ 224   3                { 
+ 225   4                lcd_str("Not reset"); 
+ 226   4                delay_ms(500); 
+ 227   4                }
+ 228   3                 
+ 229   3      
+ 230   3            }
+ 231   2          else
+ 232   2            { 
+ 233   3      
+ 234   3                
+ 235   3            
+ 236   3              lcd_cmd(0x94);
+ 237   3            lcd_str("valid card");
+ 238   3              delay_ms(1000);
+ 239   3                  ch2=i2c_dev_read(0xa0,i);
+ 240   3            if(ch2=='0')
+C51 COMPILER V9.60.0.0   MAIN                                                              04/10/2021 16:18:36 PAGE 5   
+
+ 241   3            {
+ 242   4                 lcd_cmd(0x01);
+ 243   4                lcd_cmd(0x80);
+ 244   4                lcd_str("voting not done!");
+ 245   4                delay_ms(1000);
+ 246   4                otp_gen();
+ 247   4                    lcd_cmd(0x01);
+ 248   4                      lcd_cmd(0x94);
+ 249   4                lcd_str("OTP : ");
+ 250   4                      lcd_cmd(0xd4);
+ 251   4                lcd_str(otp);
+ 252   4                delay_ms(1000);
+ 253   4                      lcd_cmd(0xc0);
+ 254   4      
+ 255   4                  
+ 256   4                            for(j=0;j<5;j++)
+ 257   4                       { 
+ 258   5                    if(j==4)
+ 259   5                      {
+ 260   6                        scan_otp[j]='\0';
+ 261   6                        break;
+ 262   6                      }
+ 263   5                  scan_otp[j]=key_scan();
+ 264   5                     
+ 265   5                    if(scan_otp[j]=='D')
+ 266   5                        {
+ 267   6                            j=j-2;
+ 268   6                          lcd_cmd(0x10);
+ 269   6                          lcd_char(' ');
+ 270   6                          lcd_cmd(0x10);
+ 271   6                        }
+ 272   5                    else
+ 273   5                      lcd_char('*');
+ 274   5                  } // for
+ 275   4                
+ 276   4                lcd_cmd(0x94);
+ 277   4                lcd_str("press #");
+ 278   4                while(!(key_scan()=='#'));
+ 279   4                  delay_ms(1000);
+ 280   4                            
+ 281   4                 
+ 282   4                  
+ 283   4              if(strcmp(otp,scan_otp)==0)
+ 284   4                {
+ 285   5                  lcd_str("valid otp");
+ 286   5                          lcd_cmd(0x01);
+ 287   5                lcd_cmd(0x80);
+ 288   5                lcd_str("Party-1==>[A]");
+ 289   5                lcd_cmd(0xc0);
+ 290   5                lcd_str("Party-2==>[B]");
+ 291   5                lcd_cmd(0x94);
+ 292   5                lcd_str("Party-3==>[C]");
+ 293   5                party=key_scan();
+ 294   5      
+ 295   5                           switch(party)
+ 296   5                  {
+ 297   6                    case 'A':
+ 298   6                        party_1set++;
+ 299   6                        cnt_1=party_1set+48;
+ 300   6                        i2c_dev_write(0xa0,4,cnt_1);
+ 301   6                        i2c_dev_write(0xa0,i,'1');
+ 302   6                        lcd_cmd(0xd4);
+C51 COMPILER V9.60.0.0   MAIN                                                              04/10/2021 16:18:36 PAGE 6   
+
+ 303   6                        lcd_str("vote done A");
+ 304   6                        delay_ms(2500);
+ 305   6                      //  goto UP;
+ 306   6                        break;
+ 307   6                  case 'B':
+ 308   6                        party_2set++;
+ 309   6                        cnt_2=party_2set+48;
+ 310   6                        i2c_dev_write(0xa0,5,cnt_2);
+ 311   6                        i2c_dev_write(0xa0,i,'1');
+ 312   6                        lcd_cmd(0xd4);
+ 313   6                        lcd_str("vote done B");
+ 314   6                        delay_ms(2500);
+ 315   6                      //  goto UP;
+ 316   6                        break;
+ 317   6                  case 'C':
+ 318   6                        party_3set++;
+ 319   6                        cnt_3=party_3set+48;
+ 320   6                        i2c_dev_write(0xa0,6,cnt_3);
+ 321   6                        i2c_dev_write(0xa0,i,'1');
+ 322   6                        lcd_cmd(0xd4);
+ 323   6                        lcd_str("vote done C");
+ 324   6                        delay_ms(2500);
+ 325   6                      //  goto UP;
+ 326   6                        break;
+ 327   6                  default :
+ 328   6                        lcd_cmd(0x80);
+ 329   6                        lcd_str("invalid press");
+ 330   6                        led=1;
+ 331   6                        delay_ms(1000);
+ 332   6                        led=0;
+ 333   6                        //goto UP;
+ 334   6      
+ 335   6                  } // switch
+ 336   5              
+ 337   5                } // if cmp otp
+ 338   4                  else
+ 339   4                 {
+ 340   5                lcd_cmd(0x94);
+ 341   5                lcd_str("invalid otp");
+ 342   5                led=1;
+ 343   5                delay_ms(5000);
+ 344   5                led=0;
+ 345   5                  } 
+ 346   4            
+ 347   4              
+ 348   4      
+ 349   4              
+ 350   4      
+ 351   4              }// if ch2 cmp
+ 352   3      
+ 353   3                else if(ch2=='1')
+ 354   3              {
+ 355   4                lcd_cmd(0x01);
+ 356   4                lcd_cmd(0x80);
+ 357   4                lcd_str("voting done");
+ 358   4                delay_ms(1000);
+ 359   4                         
+ 360   4              }
+ 361   3          
+ 362   3              // } //for
+ 363   3                    
+ 364   3          }  // else voter
+C51 COMPILER V9.60.0.0   MAIN                                                              04/10/2021 16:18:36 PAGE 7   
+
+ 365   2           
+ 366   2         }//while
+ 367   1      
+ 368   1      
+ 369   1         
+ 370   1      
+ 371   1        }//main
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1634    ----
+   CONSTANT SIZE    =    477    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      5      24
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

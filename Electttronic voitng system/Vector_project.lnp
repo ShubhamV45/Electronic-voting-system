@@ -1,0 +1,9 @@
+"STARTUP.obj",
+"delay.obj",
+"i2c.obj",
+"keypad.obj",
+"lcd.obj",
+"otp.obj",
+"uart.obj",
+"main.obj" 
+TO "Vector_project" 

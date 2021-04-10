@@ -1,0 +1,200 @@
+C51 COMPILER V9.60.0.0   I2C                                                               04/10/2021 16:18:34 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE I2C
+OBJECT MODULE PLACED IN C:\111\evm\i2c.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE i2c.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND TABS(2) OBJECT(C:\111\
+                    -evm\i2c.obj)
+
+line level    source
+
+   1          #include<reg51.h>
+   2          #include"i2c_define.h"
+   3          #include"delay.h"
+   4          #include"type.h"
+   5          #include"i2c.h"
+   6          
+   7          
+   8          void i2c_start(void)
+   9          {
+  10   1       //sda=1;
+  11   1       //scl=1;
+  12   1       sda=1;
+  13   1       scl=1;
+  14   1       sda=0;
+  15   1      }
+  16          
+  17          
+  18          void i2c_write(u8 dat)
+  19          {
+  20   1      u8 i;
+  21   1      for(i=0;i<8;i++)
+  22   1       {
+  23   2        scl=0;
+  24   2        sda=dat&(0x80>>i)?1:0;
+  25   2        //sda=dat&(0x80>>i);
+  26   2          
+  27   2        scl=1;
+  28   2       }
+  29   1      }
+  30          
+  31          
+  32          void i2c_ack(void)
+  33          {
+  34   1       scl=0;
+  35   1      sda=1;
+  36   1      scl=1;
+  37   1      while(sda);
+  38   1      }
+  39          
+  40          void i2c_stop(void)
+  41          {
+  42   1       scl=0;
+  43   1       sda=0;
+  44   1       scl=1;
+  45   1       sda=1;
+  46   1      }
+  47          
+  48          void i2c_restart(void)
+  49          {
+  50   1       scl=0;
+  51   1       sda=1;
+  52   1       scl=1;
+  53   1       sda=0;
+  54   1      }
+C51 COMPILER V9.60.0.0   I2C                                                               04/10/2021 16:18:34 PAGE 2   
+
+  55          
+  56          void i2c_noack(void)
+  57          {
+  58   1       scl=0;
+  59   1       sda=1;
+  60   1       scl=1;
+  61   1      }
+  62          
+  63          #if Master_ack_en >0
+               
+               void i2c_master_ack(void)
+              {
+              scl=0;
+              sda=0;
+              scl=1;
+              scl=0;
+              sda=1;
+              }
+              
+              #endif
+  75           
+  76          u8 i2c_read(void)
+  77          {
+  78   1        u8 i,buff=0;
+  79   1        for(i=0;i<8;i++)
+  80   1        {
+  81   2          scl=0;
+  82   2          scl=1;
+  83   2         if(sda)
+  84   2            buff|=0x80>>i;
+  85   2         }
+  86   1        return buff;
+  87   1      }
+  88          
+  89          void i2c_dev_write(u8 slaveaddrW,u8 buffWaddr,u8 dat)
+  90           {
+  91   1      
+  92   1      i2c_start();
+  93   1      i2c_write(slaveaddrW);
+  94   1      i2c_ack();
+  95   1      i2c_write(buffWaddr);
+  96   1      i2c_ack();
+  97   1      i2c_write(dat);
+  98   1      i2c_ack();
+  99   1      i2c_stop();
+ 100   1      delay_ms(10);
+ 101   1      }
+ 102          
+ 103          u8 i2c_dev_read(u8 slaveaddrW,u8 buffRaddr)
+ 104          {
+ 105   1       u8 buff;
+ 106   1      i2c_start();
+ 107   1      i2c_write(slaveaddrW);
+ 108   1      i2c_ack();
+ 109   1      i2c_write(buffRaddr);
+ 110   1      i2c_ack();
+ 111   1      i2c_restart();
+ 112   1      i2c_write(slaveaddrW | 1);
+ 113   1      i2c_ack();
+ 114   1      buff=i2c_read();
+ 115   1      i2c_noack();
+ 116   1      i2c_stop();
+C51 COMPILER V9.60.0.0   I2C                                                               04/10/2021 16:18:34 PAGE 3   
+
+ 117   1      return buff;
+ 118   1      }
+ 119          
+ 120          
+ 121          #if Page_write_en > 0
+              void i2c_dev_page_Write(u8 slaveAddr,u8 buffstartAddr,u8 *str,u8 size)
+               {
+                u8 i; 
+                i2c_start();
+                i2c_write(slaveAddr);
+                i2c_ack();
+                i2c_write(buffstartAddr);
+                i2c_ack();
+                for(i=0;i<size;i++)
+                 {
+                  i2c_write(*str++);
+                  i2c_ack();
+                 }
+                i2c_stop();
+                delay_ms(10);
+              }
+              
+              #endif
+ 140          
+ 141          #if Seq_read_en > 1
+                void i2c_dev_seq_Read(u8 slaveAddr,u8 buffstartAddr,u8 *str,u8 size)
+                {
+                  u8 i;
+                  i2c_start();
+                  i2c_write(slaveAddr);
+                  i2c_ack();
+                  i2c_write(buffstartAddr);
+                  i2c_ack();
+                  i2c_restart();
+                  i2c_write(slaveAddr | 1);
+                  i2c_ack();
+                  for(i=0;i<size-1;i++)
+                    {
+                    str[i]=i2c_read();
+                    i2c_master_ack();
+                  }
+                  str[i]='\0';
+                  i2c_noack();
+                  i2c_stop();
+                }
+              #endif 
+ 163                
+ 164               
+ 165           
+ 166          
+ 167          
+ 168          
+ 169          
+ 170          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    199    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+C51 COMPILER V9.60.0.0   I2C                                                               04/10/2021 16:18:34 PAGE 4   
+
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
